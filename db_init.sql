@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS people (
-  product_id INT NOT NULL,
+  product_id SMALLSERIAL,
   name varchar(250) NOT NULL,
   address varchar(500),
   PRIMARY KEY (product_id)

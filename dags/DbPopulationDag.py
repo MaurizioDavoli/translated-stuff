@@ -1,4 +1,3 @@
-
 from datetime import datetime, timedelta
 
 # The DAG object; we'll need this to instantiate a DAG
@@ -11,22 +10,63 @@ from airflow.operators.python_operator import PythonOperator
 # Lib for interact with posgress db
 import psycopg2
 
+from random import randrange
 
-def db_connection():
-    connection = psycopg2.connect(
-        host="localhost",
-        port="5432",
+from faker import Faker
+
+def open_connection():
+    try:
+        connection  = psycopg2.connect(
+            host="postgres",
+            port=5432,
+            database="airflow",
+            user="airflow",
+            password="airflow")
+        return connection
+    except (Exception, psycopg2.DatabaseError) as error:
+        print(error)
+        return None
+
+def close_connection():
+    psycopg2.connect(
+        host="postgres",
+        port=5432,
         database="airflow",
         user="airflow",
-        password="airflow")
-    connection.close()
+        password="airflow").close()    
+
+def add_element():
+    conn = open_connection()
+    cur = conn.cursor()
+    random_number_to_add = randrange(10)
+    fake = Faker()
+    for i in random_number_to_add:
+        name = fake.name()
+        address = fake.address()
+        cur.execute("""
+            INSERT INTO people (name, address)
+            VALUES ( %s, %s);
+            """,
+            (name,address ))
+    conn.commit()
+    cur.close()
+    close_connection()
     
+def test_ins():
+    conn = open_connection()
+    cur = conn.cursor()
+    test_query = cur.execute("""
+        SELECT * FROM people
+        """)
+    close_connection()
+    return str(test_query)
+
 
 default_args = {
     'owner': 'airflow',
     'depends_on_past': True,
     'retries': 1,
-    'retry_delay': timedelta(minutes=5)
+    'retry_delay': timedelta(seconds=15)
 }
 
 with DAG(
@@ -36,29 +76,21 @@ with DAG(
     schedule_interval=timedelta(days=1),
     start_date=datetime(2021, 1, 1),
     catchup=False,
-    tags=['Translated'],
+    tags=['Translated']
 ) as dag: 
 
     t1 = PythonOperator(
-        depends_on_past=True,
-        task_id='connect_to_db',
+        task_id='work',
         execution_timeout=timedelta(seconds=10),
-        python_callable = db_connection
+        python_callable = add_element
     )
 
-    t2 = BashOperator(
-        task_id='add_elements',
-        bash_command='echo ciaone',
-        
-    )
-
-    t3 = BashOperator(
+    t2 = PythonOperator(
         task_id='test',
-        bash_command='echo ciaonissimo',
-        
+        python_callable = test_ins
     )
 
-t1 >> t2 >> t3
+t1 >> t2
 
 
 
