@@ -40,7 +40,8 @@ def add_element():
     cur = conn.cursor()
     random_number_to_add = randrange(10)
     fake = Faker()
-    for i in random_number_to_add:
+    i=0
+    while i < random_number_to_add:
         name = fake.name()
         address = fake.address()
         cur.execute("""
@@ -48,6 +49,7 @@ def add_element():
             VALUES ( %s, %s);
             """,
             (name,address ))
+        i=i+1
     conn.commit()
     cur.close()
     close_connection()
