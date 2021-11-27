@@ -4,7 +4,6 @@ from datetime import datetime, timedelta
 from airflow import DAG
 
 # Operators; we need this to operate!
-from airflow.operators.bash import BashOperator
 from airflow.operators.python_operator import PythonOperator
 
 # Lib for interact with posgress db
