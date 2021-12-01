@@ -1,3 +1,4 @@
+"""main project"""
 from datetime import datetime, timedelta
 
 # The DAG object; we'll need this to instantiate a DAG
@@ -5,20 +6,25 @@ from airflow import DAG
 
 # Operators; we need this to operate!
 from airflow.operators.python_operator import PythonOperator
-from airflow.models import Variable
 
+# py library for handle aws
 import boto3
-from botocore.exceptions import ClientError
 
+# py library for handle postgres dbs
 import psycopg2
 
 BUCKET_NAME = 'test-translated-bucket'
 
-def upload_file(file_path,file_name):
+
+# TODO: await the end of the upload
+def upload_file(file_path,file_name_key):
+    """support method to upload a binary obj to an s3 bucket"""
     s3_client = boto3.client('s3')
-    return s3_client.upload_file(file_path,BUCKET_NAME,file_name)
+    return s3_client.upload_file(file_path,BUCKET_NAME,file_name_key)
+
 
 def open_connection():
+    """open a connection to a postgres bd"""
     try:
         connection  = psycopg2.connect(
             host="postgres",
@@ -27,74 +33,78 @@ def open_connection():
             user="airflow",
             password="airflow")
         return connection
-    except (Exception, psycopg2.DatabaseError) as error:
+    except psycopg2.DatabaseError as error:
         print(error)
         return None
 
+
 def close_connection():
+    """close connection with posgres db """
     psycopg2.connect(
         host="postgres",
         port=5432,
         database="airflow",
         user="airflow",
-        password="airflow").close() 
+        password="airflow").close()
 
-#get the latest id from the local db
+
 def get_latest_id_ps():
+    """get the latest id from the local db (posgress)"""
     conn = open_connection()
     cur = conn.cursor()
     cur.execute("""
         SELECT max(product_id) FROM people;
         """)
-    id = cur.fetchone()[0]
-    return id
+    latest_id = cur.fetchone()[0]
+    return latest_id
 
-def get_object_file(id):
+
+def get_object_file(latest_id):
+    """ return a file from the posgres db binary encoded
+        binary encoding is preparatory for upload it in s3"""
     conn = open_connection()
     cur = conn.cursor()
     cur.execute("""
         SELECT *
         FROM people
         WHERE product_id = (%s) ;
-        """, (id,))
+        """, (latest_id,))
 
     result = cur.fetchone()
     people_id = str(result[0])
-    name =  result[1]
+    name = result[1]
     address = result[2]
-    file = open(people_id+".txt", "wb")
-    file.write((name+"\n"+address).encode('ascii'))
-    file.close()
-    return file
-    
+    with open(people_id+".txt", "wb") as file:
+        file.write((str(people_id)+"\n"+name+"\n"+address).encode('ascii'))
+        file.close()
+        return file
 
 
-    
-#get the latest id from the s3 bucket 
+# TODO: read the id from file and NOT from file name
 def get_latest_id(**kwargs):
-    s3 = boto3.resource("s3")
-    bucket = s3.Bucket(BUCKET_NAME)
+    """get the latest id from the s3 bucket"""
+    s3_resource = boto3.resource("s3")
+    bucket = s3_resource.Bucket(BUCKET_NAME)
     obj_set = bucket.objects.all()
     latest_id = 0
     for obj in obj_set:
-        id = int(obj.key[:-4])
-        if id > latest_id:
-            latest_id = id
+        obj_id = int(obj.key[:-4])
+        if obj_id > latest_id:
+            latest_id = obj_id
     kwargs['ti'].xcom_push(key='latest-id', value=latest_id)
     return latest_id
 
 
 def tranfer_data(**kwargs):
-    id = kwargs['ti'].xcom_pull(key='latest-id')+1
+    """upload to s3 all new elements of the postgres db"""
+    obj_id = kwargs['ti'].xcom_pull(key='latest-id')+1
     latest_id = get_latest_id_ps()
-    
-    while (id <= latest_id): 
-        to_upload = get_object_file(str(id))
-        upload_file(to_upload.name,to_upload.name)
-        id = id+1
-    
+    if latest_id is not None:
+        while obj_id <= latest_id:
+            to_upload = get_object_file(str(obj_id))
+            upload_file(to_upload.name,to_upload.name)
+            obj_id = obj_id+1
 
-    
 
 default_args = {
     'owner': 'airflow',
@@ -111,7 +121,7 @@ with DAG(
     start_date=datetime(2021, 1, 1),
     catchup=False,
     tags=['Translated'],
-) as dag: 
+) as dag:
 
     t1 = PythonOperator(
         task_id='get-latest-id',
