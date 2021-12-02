@@ -1,4 +1,4 @@
-"""testing actions script"""
+"""test that s3 has all the elements"""
 import boto3
 import os
 
