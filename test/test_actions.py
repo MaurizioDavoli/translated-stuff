@@ -14,6 +14,7 @@ def read_from_s3():
     id_obj = 1
     while not check_over:
         try:
+            print("*")
             with open("document.bin", "wb") as file:
                 s3_client.download_file('test-translated-bucket', str(id_obj)+'.txt', 'document.bin')
                 file.close()
