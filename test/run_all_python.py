@@ -6,4 +6,4 @@ for test in os.listdir('./test/'):
 
     if test != 'run_all_python.py':
         print("RUNNING: "+test.upper())
-        os.system('python3 ' + test)
+        os.system('python3 ./test/' + test)
