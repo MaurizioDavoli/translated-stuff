@@ -3,5 +3,7 @@
 import os
 
 for test in os.listdir('./test/'):
-    print(str(test))
+
+    print(test)
+
     # os.system('python3 '+test)
