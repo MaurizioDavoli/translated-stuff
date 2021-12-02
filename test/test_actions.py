@@ -15,7 +15,7 @@ def read_from_s3():
     while not check_over:
         try:
             with open("document.bin", "wb") as file:
-                s3_client.download_file('test-translated-bucket', '1.txt', 'document.bin')
+                s3_client.download_file('test-translated-bucket', str(id_obj)+'.txt', 'document.bin')
                 file.close()
             with open("document.bin", "rb") as file2:
                 cont = file2.read().decode("ascii")
