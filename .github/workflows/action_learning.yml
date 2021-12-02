@@ -5,6 +5,12 @@ jobs:
   Explore-GitHub-Actions:
     runs-on: ubuntu-latest
     steps:
+    
       - name: checkout repo content
         uses: actions/checkout@v2
-      - run: python3 ./test/test_actions.py
+      
+      - name: install dependencies
+        run: pip3 install -r requirements.txt
+        
+      - name: run python script
+        run: python3 ./test/test_actions.py
