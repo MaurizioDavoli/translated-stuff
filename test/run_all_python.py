@@ -2,6 +2,6 @@
 
 import os
 
-for test in os.listdir():
+for test in os.listdir('./test/'):
     print(str(test))
-    #os.system('python3 '+test)
+    # os.system('python3 '+test)
