@@ -2,6 +2,8 @@
 import boto3
 import os
 
+import botocore.exceptions
+
 print("I ran thanks to a GitHub action")
 
 
@@ -24,7 +26,7 @@ def read_from_s3():
             os.remove("document.bin")
             print(cont)
             id_obj = id_obj + 1
-        except TypeError:
+        except (botocore.exceptions.ClientError, TypeError):
             check_over = True
 
 
