@@ -28,4 +28,4 @@ def read_from_s3():
             check_over = True
 
 
-# read_from_s3()
+read_from_s3()
