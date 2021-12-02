@@ -5,6 +5,5 @@ import os
 for test in os.listdir('./test/'):
 
     if test != 'run_all_python.py':
-        print(test)
-
-    # os.system('python3 '+test)
+        print("RUNNING: "+test.upper())
+        os.system('python3 ' + test)
