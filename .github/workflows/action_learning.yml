@@ -4,4 +4,7 @@ jobs:
   Explore-GitHub-Actions:
     runs-on: ubuntu-latest
     steps:
-      - run: python3 ./test/test_actions.py
+      - run: ls
+      - run: cd test
+      - run: ls
+      - run: python3 test_actions.py
