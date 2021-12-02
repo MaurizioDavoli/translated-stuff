@@ -3,4 +3,16 @@ name: Test On Push Action
 on: [push]
 jobs:
   Pylint:
+    runs-on: ubuntu-latest
+    steps:
+      
+      - name: checkout repo content
+        uses: actions/checkout@v2
+       
+      - name: install dependencies
+        run: pip3 install pylint
+       
+      - name: check dags
+        run: python3 ./.github/check_dags.py
+       
 
