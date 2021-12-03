@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from front import get_message_from_date as to_test
+import front.get_message_from_date as to_test
 
 
 def test_date_accuracy():
