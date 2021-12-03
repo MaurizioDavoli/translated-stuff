@@ -1,15 +1,13 @@
 """class that offer the capability of looking for conversation in a given date"""
 
-import requests
-
+import urllib.parse
 from datetime import datetime, timedelta
 
+import matplotlib.pyplot as plt
 import pandas as pd
+import requests
 
-import urllib.parse
-
-
-ACCESS_TOKEN = os.environ['FRONT_TOKEN']
+from FrontUtility import FrontUtility
 
 
 url = "https://api2.frontapp.com/"
@@ -60,24 +58,52 @@ def get_conversations_of(start_date, time_zone, day_range=1,  tag=None):
     dates = get_date_range(start_date, day_range)
     query_url = create_url(dates, tag)
     print(query_url)
-    response = requests.request("GET", query_url, headers=headers)
-    print(response.json()["_total"])
-    data_frame = pd.DataFrame(response.json()["_results"]).drop(["_links",
-                                                                 "status",
-                                                                 "assignee",
-                                                                 "recipient",
-                                                                 "links",
-                                                                 "tags",
-                                                                 "topics",
-                                                                 "last_message",
-                                                                 "is_private",
-                                                                 "scheduled_reminders",
-                                                                 "metadata"], axis=1)
-    print_uncropped_data_frama(data_frame)
-    return data_frame
+    data_frame = None
+    quantity = 0
+    while data_frame is None:
+        try:
+            response = requests.request("GET", query_url, headers=headers)
+            print(response.json()["_total"])
+            quantity = response.json()["_total"]
+            data_frame = pd.DataFrame(response.json()["_results"]).drop(["_links",
+                                                                         "status",
+                                                                         "assignee",
+                                                                         "recipient",
+                                                                         "links",
+                                                                         "tags",
+                                                                         "topics",
+                                                                         "last_message",
+                                                                         "is_private",
+                                                                         "scheduled_reminders",
+                                                                         "metadata"], axis=1)
+        except:
+            pass
+
+    return data_frame, quantity
 
 
-date = datetime(2021, 10, 1)
-get_conversations_of(date, "UTC", tag="tag_1j5rra")
+def plot_maybe_offer_october():
+    day = 1
+    dict_set = {}
+    while day < 31:
+        data = datetime(2021, 11, day)
+        maybe_offer = get_conversations_of(data, "UTC", tag="tag_1j5rra")[1]
+        print(maybe_offer)
+        dict_set[str(data).removesuffix("00:00:00")] = maybe_offer
+        day = day+1
+    serie = pd.Series(dict_set)
+    serie.plot.bar(title='MAYBY OFFER IN NOVEMBRE')
+    plt.tight_layout()
+    plt.show()
+    plt.close('all')
+
+    print(dict)
+
+
+#plot_maybe_offer_october()
+
+tool = FrontUtility(ACCESS_TOKEN)
+tool.get_conversations(datetime(2021, 11, 1), tag="tag_1j5rra")
+
 
 # tag_1j5rra = maybe offer
