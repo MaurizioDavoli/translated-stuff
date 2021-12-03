@@ -69,6 +69,7 @@ def get_more_conversation_data(x):
 
 def get_plot_tag(x):
     base_data_set = get_more_conversation_data(x)
+    print_uncropped_data_frama(base_data_set)
     dict_set = {}
     for row in base_data_set.iterrows():
         element = row[1]["name"]
