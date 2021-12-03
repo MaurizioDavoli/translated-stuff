@@ -2,7 +2,6 @@ from datetime import datetime
 
 from front import get_message_from_date as to_test
 
-i
 
 def test_date_accuracy():
     date = datetime(2021, 10, 1)
