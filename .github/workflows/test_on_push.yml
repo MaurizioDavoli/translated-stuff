@@ -16,4 +16,5 @@ jobs:
         env: 
           AWS_ACCESS_KEY_ID: ${{secrets.API_KEY}}
           AWS_SECRET_ACCESS_KEY: ${{secrets.API_SECRET}}
+          FRONT_TOKEN: ${{secrets.FRONT_TOKEN}}
         run: python3 ./test/run_all_python.py
