@@ -1,5 +1,6 @@
 """tool to get simple operation with the staging db"""
 import mysql.connector
+from mysql.connector.errors import InterfaceError
 
 USER = None
 PSWD = None
@@ -20,15 +21,16 @@ def _get_connection():
 
 
 def _execute_query(query, params=None):
-    cnx = _get_connection()
-    cursor = cnx.cursor()
+    response = ["empty",]
     try:
+        cnx = _get_connection()
+        cursor = cnx.cursor()
         cursor.execute(query, params)
-    except Exception as error:
+        response = cursor.fetchall()
+        cursor.close()
+        cnx.close()
+    except InterfaceError as error:
         print(error)
-    response = cursor.fetchall()
-    cursor.close()
-    cnx.close()
     return response
 
 

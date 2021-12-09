@@ -5,9 +5,12 @@ import datetime
 
 from airflow import DAG
 from airflow.operators.python_operator import PythonOperator
+from airflow.exceptions import AirflowTaskTimeout
 
 from FrontUtility import FrontUtility
 from MySqlDbUtility import MySqlDbUtility
+
+
 
 
 default_args = {
@@ -24,7 +27,7 @@ def get_front_conversations():
     yesterday_ok = datetime.datetime(yesterday.year, yesterday.month, yesterday.day)
     to_check_conversations = {}
     try:
-        response = front_tool.get_conversations(yesterday_ok, tag='tag_1j5rie')
+        response = front_tool.get_conversations(yesterday_ok, tag='tag_1g44qu')
         to_check_conversations = response['_results']
         print(response['_total'])
     except RecursionError:
@@ -44,12 +47,17 @@ def test_connection():
     to_check_conversations = get_front_conversations()
     for msg in to_check_conversations:
         print(" ->"+str(msg['created_at'])+" "+msg['id']+msg['subject'])
-
         arrival_date = datetime.datetime.utcfromtimestamp(msg['created_at']).replace(microsecond=0)
-        response = look_for_merge_in_db(arrival_date)
+        response = []
+        try:
+            response = look_for_merge_in_db(arrival_date)
+        except AirflowTaskTimeout as error:
+            print(error)
+            pass
         if response:
             # TODO
             pass
+        print(response)
 
 
 with DAG(
