@@ -8,7 +8,7 @@ import requests
 
 ACCESS_TOKEN = None
 
-url = "https://api2.frontapp.com/"
+url = "https://api2.frontapp.com/conversations/search/"
 
 headers = {}
 
@@ -31,7 +31,7 @@ def _create_url(start, end, tag, inbox):
     if inbox is not None:
         inbox_query = " inbox:" + inbox
     query = start_query + end_query + tag_query + inbox_query
-    return url + "conversations/search/" + urllib.parse.quote(query)
+    return url + urllib.parse.quote(query)
 
 
 def _query_to_api(query_url):
@@ -85,3 +85,15 @@ class FrontUtility:
             else:
                 raise RecursionError
         return searched_data
+
+    def get_yesterday_conversations(self):
+        yesterday = datetime.datetime.now() - timedelta(days=1)
+        yesterday_ok = datetime.datetime(yesterday.year, yesterday.month, yesterday.day)
+        to_check_conversations = {}
+        try:
+            response = self.get_conversations(yesterday_ok, tag='tag_1dxwxy')
+            to_check_conversations = response['_results']
+            print(response['_total'])
+        except RecursionError:
+            print("API ERROR")
+        return to_check_conversations

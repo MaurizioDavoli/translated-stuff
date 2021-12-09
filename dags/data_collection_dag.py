@@ -2,6 +2,7 @@
 import os
 from datetime import timedelta
 import datetime
+import pytz
 
 from airflow import DAG
 from airflow.operators.python_operator import PythonOperator
@@ -9,8 +10,6 @@ from airflow.exceptions import AirflowTaskTimeout
 
 from FrontUtility import FrontUtility
 from MySqlDbUtility import MySqlDbUtility
-
-
 
 
 default_args = {
@@ -23,16 +22,7 @@ default_args = {
 
 def get_front_conversations():
     front_tool = FrontUtility(os.environ['FRONT_TOKEN'])
-    yesterday = datetime.datetime.now() - timedelta(days=1)
-    yesterday_ok = datetime.datetime(yesterday.year, yesterday.month, yesterday.day)
-    to_check_conversations = {}
-    try:
-        response = front_tool.get_conversations(yesterday_ok, tag='tag_1g44qu')
-        to_check_conversations = response['_results']
-        print(response['_total'])
-    except RecursionError:
-        print("API ERROR")
-    return to_check_conversations
+    return front_tool.get_yesterday_conversations()
 
 
 def look_for_merge_in_db(arrival_date):
@@ -47,7 +37,13 @@ def test_connection():
     to_check_conversations = get_front_conversations()
     for msg in to_check_conversations:
         print(" ->"+str(msg['created_at'])+" "+msg['id']+msg['subject'])
-        arrival_date = datetime.datetime.utcfromtimestamp(msg['created_at']).replace(microsecond=0)
+
+        cet_time = pytz.timezone('CET')
+        utc_dt = datetime.datetime.utcfromtimestamp(msg['created_at']).replace(microsecond=0)
+        arrival_date = utc_dt.astimezone(cet_time).replace(tzinfo=None)
+
+        print(arrival_date)
+        print(arrival_date.__class__)
         response = []
         try:
             response = look_for_merge_in_db(arrival_date)
