@@ -1,5 +1,5 @@
 """class that offer the capability of looking for conversation in a given date"""
-
+import os
 import urllib.parse
 from datetime import datetime, timedelta
 
@@ -7,8 +7,9 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import requests
 
-from FrontUtility import FrontUtility
+from dags.FrontUtility import FrontUtility
 
+ACCESS_TOKEN = os.environ['FRONT_TOKEN']
 
 url = "https://api2.frontapp.com/"
 
