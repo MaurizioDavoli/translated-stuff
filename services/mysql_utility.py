@@ -21,7 +21,7 @@ def _get_connection():
 
 
 def _execute_query(query, params=None):
-    response = ["empty",]
+    response = ["empty", ]
     try:
         cnx = _get_connection()
         cursor = cnx.cursor()
@@ -59,7 +59,29 @@ class MySqlDbUtility:
         return _execute_query(query)
 
     @staticmethod
-    def get_offer(creation_date):
-        query = "SELECT * FROM customers_offers_stats WHERE arrival_datetime = %s"
-        params = (creation_date,)
+    def get_offer(creation_date, sender_mail):
+        date_or = creation_date
+        date_no_sec = creation_date.replace(second=0)
+        query = "SELECT * " \
+                "FROM customers_offers_stats " \
+                "WHERE requester_email = %s " \
+                "AND  (arrival_datetime = %s OR arrival_datetime = %s)"
+        params = (sender_mail, date_or, date_no_sec,)
         return _execute_query(query, params=params)
+
+    def get_parsed_offer(self, creation_date, sender_mail):
+        offer = self.get_offer(creation_date, sender_mail)
+        parsed_offer = []
+        if offer:
+            offer = offer[0]
+            parsed_offer.append((offer[0],
+                                 offer[5],
+                                 offer[7],
+                                 offer[8],
+                                 offer[9],
+                                 offer[11],
+                                 offer[12],
+                                 offer[18],
+                                 offer[20]
+                                 ))
+        return parsed_offer

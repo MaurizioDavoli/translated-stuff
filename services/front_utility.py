@@ -2,6 +2,8 @@
 import time
 from datetime import datetime, timedelta
 import datetime
+from pytz import timezone
+
 import urllib.parse
 
 import requests
@@ -11,6 +13,9 @@ ACCESS_TOKEN = None
 url = "https://api2.frontapp.com/conversations/search/"
 
 headers = {}
+
+# offers_tag = ['tag_1dxwxy', 'tag_1g44qu', 'tag_1j5rie']
+offers_tag = ['tag_1dxwxy', ]
 
 
 def _get_date_range(start_date, date_range):
@@ -41,12 +46,35 @@ def _query_to_api(query_url):
         try:
             query_response = requests.request("GET", query_url, headers=headers).json()
             if '_error' in query_response:
-                time.sleep(10)
+                print(query_response)
+                time.sleep(1)
                 query_response = None
         except Exception as error:
             print(error)
             pass
     return query_response
+
+
+def _parse_tag(tag_list):
+    parsed_list = []
+    for row in tag_list:
+        parsed_list.append((row['id'],
+                            row['name']))
+    return parsed_list
+
+
+def _parse_contact(contact_list):
+    parsed_list = []
+    for row in contact_list:
+        parsed_list.append((row['source'],
+                            row['handle']))
+    return parsed_list
+
+
+def _from_timestampms_to_datetime_cet(timestamp_ms):
+    utc_dt = datetime.datetime.fromtimestamp(timestamp_ms).replace(microsecond=0)
+    arrival_date = utc_dt.astimezone(timezone('Europe/Rome')).replace(tzinfo=None)
+    return arrival_date
 
 
 class FrontUtility:
@@ -62,19 +90,13 @@ class FrontUtility:
 
     @staticmethod
     def get_conversations(start_date, day_range=1, tag=None, inbox=None):
-        """
-        :param start_date: have to be datetime
-        :param day_range: how many days you want to check
-        :param tag:
-        :param inbox:
-        :return: list of conversation in a given day by default
-        """
         dates = _get_date_range(start_date, day_range)
         query_url = _create_url(dates[0], dates[1], tag, inbox)
         searched_data = {}
         first_page = True
         while query_url is not None:
             query_response = _query_to_api(query_url)
+            print(query_url)
             if first_page:
                 searched_data = query_response
                 first_page = False
@@ -84,16 +106,50 @@ class FrontUtility:
                 query_url = query_response['_pagination']['next']
             else:
                 raise RecursionError
+
         return searched_data
 
-    def get_yesterday_conversations(self):
+    def get_yesterday_conversations(self, tag=None):
         yesterday = datetime.datetime.now() - timedelta(days=1)
         yesterday_ok = datetime.datetime(yesterday.year, yesterday.month, yesterday.day)
         to_check_conversations = {}
         try:
-            response = self.get_conversations(yesterday_ok, tag='tag_1dxwxy')
+            response = self.get_conversations(yesterday_ok, tag=tag)
             to_check_conversations = response['_results']
             print(response['_total'])
         except RecursionError:
             print("API ERROR")
         return to_check_conversations
+
+    @staticmethod
+    def get_contact(contact_url):
+        response = _query_to_api(contact_url)['handles']
+        if response is None:
+            return []
+        return response
+
+    def get_parsed_yesterday_conversation(self, tag=None):
+        conversations = self.get_yesterday_conversations(tag=tag)
+        parsed_list = []
+        print("still working.. it may take a bit")
+        a = 0
+        for row in conversations:
+            parsed_list.append((row['id'],
+                                row['subject'],
+                                row['status'],
+                                _parse_tag(row['tags']),
+                                _from_timestampms_to_datetime_cet(row['created_at']),
+                                _parse_contact(self.get_contact(row['recipient']['_links']['related']['contact']))
+                                ))
+        return parsed_list
+
+    def get_tagged_yesterday_parsed_conversations(self):
+        parsed_list = []
+        for tag in offers_tag:
+            conversations = self.get_parsed_yesterday_conversation(tag=tag)
+            for conv in conversations:
+                parsed_list.append(conv)
+        return parsed_list
+
+
+

@@ -2,14 +2,13 @@
 import os
 from datetime import timedelta
 import datetime
-import pytz
 
 from airflow import DAG
 from airflow.operators.python_operator import PythonOperator
-from airflow.exceptions import AirflowTaskTimeout
 
-from FrontUtility import FrontUtility
-from MySqlDbUtility import MySqlDbUtility
+from services.front_utility import FrontUtility
+from services.mysql_utility import MySqlDbUtility
+from services.merge_utility import merge_db_front
 
 
 default_args = {
@@ -20,40 +19,23 @@ default_args = {
 }
 
 
-def get_front_conversations():
+def test_connection():
+    # create a tool for handling front api
     front_tool = FrontUtility(os.environ['FRONT_TOKEN'])
-    return front_tool.get_yesterday_conversations()
-
-
-def look_for_merge_in_db(arrival_date):
     mysql_tool = MySqlDbUtility(os.environ['MYSQL_DB_USER'],
                                 os.environ['MYSQL_DB_PSWD'],
                                 os.environ['MYSQL_DB_HOST'],
                                 os.environ['MYSQL_DB_NAME'])
-    return mysql_tool.get_offer(arrival_date)
-
-
-def test_connection():
-    to_check_conversations = get_front_conversations()
-    for msg in to_check_conversations:
-        print(" ->"+str(msg['created_at'])+" "+msg['id']+msg['subject'])
-
-        cet_time = pytz.timezone('CET')
-        utc_dt = datetime.datetime.utcfromtimestamp(msg['created_at']).replace(microsecond=0)
-        arrival_date = utc_dt.astimezone(cet_time).replace(tzinfo=None)
-
-        print(arrival_date)
-        print(arrival_date.__class__)
-        response = []
-        try:
-            response = look_for_merge_in_db(arrival_date)
-        except AirflowTaskTimeout as error:
-            print(error)
-            pass
-        if response:
-            # TODO
-            pass
-        print(response)
+    # logic below
+    to_check_conversations = front_tool.get_tagged_yesterday_parsed_conversations()
+    for front_obj in to_check_conversations:
+        db_obj = mysql_tool.get_parsed_offer(front_obj[4], front_obj[5][0][1])
+        merged_list = []
+        if db_obj:
+            merged_list = merge_db_front(db_obj, front_obj)
+            # Todo: write amazing list to db
+        if merged_list:
+            print(merged_list)
 
 
 with DAG(
