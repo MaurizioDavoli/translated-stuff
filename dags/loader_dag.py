@@ -27,9 +27,9 @@ def load_dags():
 
 default_args = {
     'owner': 'airflow',
-    'depends_on_past': True,
-    'retries': 1,
-    'retry_delay': timedelta(seconds=15)
+    'depends_on_past': False,
+    'retries': 5,
+    'retry_delay': timedelta(seconds=5)
 }
 
 with DAG(
