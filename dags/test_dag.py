@@ -6,10 +6,24 @@ import datetime
 
 from pprint import pprint
 import sys
+import os
 
 
 def get_sys_path():
     pprint(sys.path)
+
+
+def get_project_info():
+    # stream = os.popen('rm test_remote_creation_dag.py')
+    # print(stream.read())
+    stream = os.popen('ls -la ./dags')
+    print(stream.read())
+    stream = os.popen('cat ./dags/test_remote_creation_dag.py')
+    print(stream.read())
+    stream = os.popen('ls -la')
+    print(stream.read())
+
+
 
 default_args = {
     'owner': 'airflow',
@@ -31,4 +45,9 @@ with DAG(
         task_id='sys_path',
         execution_timeout=timedelta(seconds=10),
         python_callable=get_sys_path
+    )
+    t2 = PythonOperator(
+        task_id='prj_info',
+        execution_timeout=timedelta(seconds=10),
+        python_callable=get_project_info
     )

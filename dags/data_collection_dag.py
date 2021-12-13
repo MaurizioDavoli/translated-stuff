@@ -6,7 +6,7 @@ import datetime
 from airflow import DAG
 from airflow.operators.python_operator import PythonOperator
 
-from services.front_utility import FrontUtility
+from opt.airflow.services.front_utility import FrontUtility
 from services.mysql_utility import MySqlDbUtility
 from services.merge_utility import merge_db_front
 
