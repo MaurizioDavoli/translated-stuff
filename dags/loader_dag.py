@@ -25,6 +25,15 @@ PATH_DICT = {'dags': {'local': './dags/', 's3': 'dags/'},
              'services': {'local': './services/', 's3': 'services/'}}
 
 
+def get_xcoms_list(type_file, kwargs):
+    str_list = str(kwargs.xcom_pull(key=type_file+'/file_in_bucket'))
+    if str_list != '':
+        file_list = str_list.split("', '")
+        return file_list
+    else:
+        return None
+
+
 def get_s3_file_names(prefix):
     """get the name of the file in the bucket prefix"""
     s3_client = boto3.client('s3', region_name="eu-west-3")
@@ -51,22 +60,22 @@ def get_local_file_names(prefix):
     return local_dags
 
 
-def delete_utility(prefix_s3, prefix_local):
+def delete_utility(prefix_local, kwarg, type_name):
     """delete not found file in the given prefix"""
     local_dags = get_local_file_names(prefix_local)
-    s3_elem = get_s3_file_names(prefix_s3)
+    s3_elem = get_xcoms_list(type_name, kwarg)
     if s3_elem is None:
         logging.error("SOMENTHING WENT WRONG")
         return
     for file_name in local_dags:
         if file_name not in s3_elem:
             logging.error("DELETING -->"+file_name)
-            system('rm '+prefix_local+file_name)
+            # system('rm '+prefix_local+file_name)
 
 
-def load_utility(prefix_s3, prefix_local):
+def load_utility(prefix_s3, prefix_local, kwarg, type_name):
     """load or update the local files in the given prefix"""
-    s3_elem = get_s3_file_names(prefix_s3)
+    s3_elem = get_xcoms_list(type_name, kwarg)
     if s3_elem is None:
         logging.error("SOMENTHING WENT WRONG")
         return
@@ -83,24 +92,33 @@ def load_utility(prefix_s3, prefix_local):
             file.close()
 
 
-def delete_task():
+def get_from_s3(**kwargs):
+    for elem in PATH_DICT:
+        str_list = str(get_s3_file_names(PATH_DICT[elem]['s3']))[2:-2]
+        kwargs['ti'].xcom_push(key=elem+'/file_in_bucket', value=str_list)
+        get_xcoms_list(elem, kwargs['ti'])
+
+
+def delete_task(**kwargs):
     """delete not found file"""
     for elem in PATH_DICT:
-        delete_utility(PATH_DICT[elem]['s3'], PATH_DICT[elem]['local'])
+        delete_utility(PATH_DICT[elem]['local'], kwargs['ti'], elem)
 
 
-def load_task():
+def load_task(**kwargs):
     """load or update the local files"""
     for elem in PATH_DICT:
-        load_utility(PATH_DICT[elem]['s3'], PATH_DICT[elem]['local'])
+        load_utility(PATH_DICT[elem]['s3'], PATH_DICT[elem]['local'], kwargs['ti'], elem)
 
 
 default_args = {
     'owner': 'airflow',
     'depends_on_past': False,
+    'provide_context': True,
     'retries': 5,
-    'retry_delay': timedelta(seconds=5)
+    'retry_delay': timedelta(seconds=5),
 }
+
 
 with DAG(
     's3_loader',
@@ -112,14 +130,19 @@ with DAG(
     tags=['Translated']
 ) as dag:
     t1 = PythonOperator(
+        task_id='get_from_s3',
+        execution_timeout=timedelta(seconds=10),
+        python_callable=get_from_s3
+    )
+    t2 = PythonOperator(
         task_id='s3_delete',
         execution_timeout=timedelta(seconds=10),
         python_callable=delete_task
     )
-    t2 = PythonOperator(
+    t3 = PythonOperator(
         task_id='s3_load',
         execution_timeout=timedelta(seconds=10),
         python_callable=load_task
     )
 
-t1 >> t2
+t1 >> (t2, t3)
