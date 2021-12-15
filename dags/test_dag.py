@@ -16,11 +16,13 @@ def get_sys_path():
 def get_project_info():
     # stream = os.popen('rm test_remote_creation_dag.py')
     # print(stream.read())
-    stream = os.popen('ls -la ./dags')
+    stream = os.popen('ls -l ./dags')
     print(stream.read())
     stream = os.popen('cat ./dags/test_remote_creation_dag.py')
     print(stream.read())
-    stream = os.popen('ls -la')
+    stream = os.popen('ls -l')
+    print(stream.read())
+    stream = os.popen('ls -l ./services')
     print(stream.read())
 
 

@@ -1,3 +1,7 @@
+"""
+this dag delete from the services and dag folder the file that are not in the s3 bucket
+after this it load or upload the file that it found in the same bucket
+"""
 import boto3
 from botocore.exceptions import ClientError
 
@@ -6,23 +10,89 @@ from airflow.operators.python_operator import PythonOperator
 
 from datetime import timedelta, datetime
 
+from os import walk, system
+import os
+import logging
+
+
 BUCKET_NAME = 'test-translated-bucket'
+# BUCKET_NAME = os.environ['AWS_BUCKET']
+
+# these file names are ignored by the dag loader
+CONFIG_DAGS_NAME = ['__init__.py', 'loader_dag.py']
+
+PATH_DICT = {'dags': {'local': './dags/', 's3': 'dags/'},
+             'services': {'local': './services/', 's3': 'services/'}}
 
 
-def load_dags():
+def get_s3_file_names(prefix):
+    """get the name of the file in the bucket prefix"""
     s3_client = boto3.client('s3', region_name="eu-west-3")
-    obj_set = s3_client.list_objects_v2(Bucket=BUCKET_NAME)
-    for elem in obj_set['Contents']:
-        if str(elem['Key']).endswith(".py"):
-            with open('dags/'+elem['Key'], 'wb') as file:
-                try:
-                    s3_client.download_fileobj(BUCKET_NAME, elem['Key'], file)
-                except ClientError as e:
-                    if e.response['Error']['Code'] == "404":
-                        print("The object does not exist.")
-                    else:
-                        raise
-                file.close()
+    try:
+        obj_set = s3_client.list_objects_v2(Bucket=BUCKET_NAME,
+                                            Prefix=prefix)
+        s3_dags = []
+        for elem in obj_set['Contents']:
+            if str(elem['Key']).endswith(".py"):
+                s3_dags.append(elem['Key'][len(prefix):])
+        return s3_dags
+    except ClientError as e:
+        logging.error(e)
+        return None
+
+
+def get_local_file_names(prefix):
+    """get the name of the file in the local prefix"""
+    local_dags = []
+    for (dirpath, dirnames, filenames) in walk(prefix):
+        for file_name in filenames:
+            if file_name.endswith('.py') and file_name not in CONFIG_DAGS_NAME:
+                local_dags.append(file_name)
+    return local_dags
+
+
+def delete_utility(prefix_s3, prefix_local):
+    """delete not found file in the given prefix"""
+    local_dags = get_local_file_names(prefix_local)
+    s3_elem = get_s3_file_names(prefix_s3)
+    if s3_elem is None:
+        logging.error("SOMENTHING WENT WRONG")
+        return
+    for file_name in local_dags:
+        if file_name not in s3_elem:
+            logging.error("DELETING -->"+file_name)
+            system('rm '+prefix_local+file_name)
+
+
+def load_utility(prefix_s3, prefix_local):
+    """load or update the local files in the given prefix"""
+    s3_elem = get_s3_file_names(prefix_s3)
+    if s3_elem is None:
+        logging.error("SOMENTHING WENT WRONG")
+        return
+    for elem in s3_elem:
+        with open(prefix_local+elem, 'wb') as file:
+            try:
+                s3_client = boto3.client('s3', region_name="eu-west-3")
+                s3_client.download_fileobj(BUCKET_NAME, prefix_s3+elem, file)
+            except ClientError as e:
+                if e.response['Error']['Code'] == "404":
+                    logging.error("The object does not exist.")
+                else:
+                    raise
+            file.close()
+
+
+def delete_task():
+    """delete not found file"""
+    for elem in PATH_DICT:
+        delete_utility(PATH_DICT[elem]['s3'], PATH_DICT[elem]['local'])
+
+
+def load_task():
+    """load or update the local files"""
+    for elem in PATH_DICT:
+        load_utility(PATH_DICT[elem]['s3'], PATH_DICT[elem]['local'])
 
 
 default_args = {
@@ -42,7 +112,14 @@ with DAG(
     tags=['Translated']
 ) as dag:
     t1 = PythonOperator(
+        task_id='s3_delete',
+        execution_timeout=timedelta(seconds=10),
+        python_callable=delete_task
+    )
+    t2 = PythonOperator(
         task_id='s3_load',
         execution_timeout=timedelta(seconds=10),
-        python_callable=load_dags
+        python_callable=load_task
     )
+
+t1 >> t2

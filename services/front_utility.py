@@ -14,8 +14,8 @@ url = "https://api2.frontapp.com/conversations/search/"
 
 headers = {}
 
-# offers_tag = ['tag_1dxwxy', 'tag_1g44qu', 'tag_1j5rie']
-offers_tag = ['tag_1dxwxy', ]
+offers_tag = ['tag_1dxwxy', 'tag_1g44qu', 'tag_1j5rie']
+# offers_tag = ['tag_1dxwxy', ]
 
 
 def _get_date_range(start_date, date_range):
@@ -42,16 +42,18 @@ def _create_url(start, end, tag, inbox):
 def _query_to_api(query_url):
     """:return json result to get query at a given url"""
     query_response = None
-    while query_response is None:
+    attempt = 0
+    while query_response is None and attempt < 10:
         try:
             query_response = requests.request("GET", query_url, headers=headers).json()
             if '_error' in query_response:
                 print(query_response)
                 time.sleep(1)
+                attempt = attempt + 1
                 query_response = None
         except Exception as error:
+            attempt = attempt + 1
             print(error)
-            pass
     return query_response
 
 
