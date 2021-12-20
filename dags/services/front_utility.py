@@ -14,8 +14,9 @@ url = "https://api2.frontapp.com/conversations/search/"
 
 headers = {}
 
+# offers_tag = ['automatic',  'forwarded',  'dragged_ui', 'maybe_offer']
+# offers_tag = ['tag_1dxwxy', 'tag_1g44qu', 'tag_1j5rie', 'tag_1j5rra']
 offers_tag = ['tag_1dxwxy', 'tag_1g44qu', 'tag_1j5rie']
-# offers_tag = ['tag_1dxwxy', ]
 
 
 def _get_date_range(start_date, date_range):
@@ -42,17 +43,15 @@ def _create_url(start, end, tag, inbox):
 def _query_to_api(query_url):
     """:return json result to get query at a given url"""
     query_response = None
-    attempt = 0
-    while query_response is None and attempt < 10:
+    while query_response is None:
         try:
             query_response = requests.request("GET", query_url, headers=headers).json()
             if '_error' in query_response:
                 print(query_response)
                 time.sleep(1)
-                attempt = attempt + 1
                 query_response = None
         except Exception as error:
-            attempt = attempt + 1
+            query_response = None
             print(error)
     return query_response
 
@@ -60,8 +59,7 @@ def _query_to_api(query_url):
 def _parse_tag(tag_list):
     parsed_list = []
     for row in tag_list:
-        parsed_list.append((row['id'],
-                            row['name']))
+        parsed_list.append(row['name'])
     return parsed_list
 
 
@@ -113,7 +111,8 @@ class FrontUtility:
 
     def get_yesterday_conversations(self, tag=None):
         yesterday = datetime.datetime.now() - timedelta(days=1)
-        yesterday_ok = datetime.datetime(yesterday.year, yesterday.month, yesterday.day)
+        # TODO: CHANGE THIS!!!! IS JUST FOR TESTS SAKE
+        yesterday_ok = datetime.datetime(yesterday.year, yesterday.month, yesterday.day).replace(month=11)
         to_check_conversations = {}
         try:
             response = self.get_conversations(yesterday_ok, tag=tag)
@@ -152,6 +151,3 @@ class FrontUtility:
             for conv in conversations:
                 parsed_list.append(conv)
         return parsed_list
-
-
-

@@ -6,42 +6,39 @@ import datetime
 from airflow import DAG
 from airflow.operators.python_operator import PythonOperator
 
-from opt.airflow.services.front_utility import FrontUtility
-from services.mysql_utility import MySqlDbUtility
-from services.merge_utility import merge_db_front
+from services.front_utility import FrontUtility
+from services.merge_utility import merge_db_front, validate_elem
+from services.postgres_utility import PostgresUtility
 
 
 default_args = {
     'owner': 'airflow',
-    'depends_on_past': True,
+    'depends_on_past': False,
     'retries': 1,
     'retry_delay': timedelta(seconds=15)
 }
 
 
-def test_connection():
-    # create a tool for handling front api
+def collect_data():
     front_tool = FrontUtility(os.environ['FRONT_TOKEN'])
-    mysql_tool = MySqlDbUtility(os.environ['MYSQL_DB_USER'],
-                                os.environ['MYSQL_DB_PSWD'],
-                                os.environ['MYSQL_DB_HOST'],
-                                os.environ['MYSQL_DB_NAME'])
-    # logic below
+    postgres_tool = PostgresUtility(host='postgres',
+                                    port=5432,
+                                    name='airflow',
+                                    user='airflow',
+                                    pswd='airflow')
     to_check_conversations = front_tool.get_tagged_yesterday_parsed_conversations()
-    for front_obj in to_check_conversations:
-        db_obj = mysql_tool.get_parsed_offer(front_obj[4], front_obj[5][0][1])
-        merged_list = []
-        if db_obj:
-            merged_list = merge_db_front(db_obj, front_obj)
-            # Todo: write amazing list to db
-        if merged_list:
-            print(merged_list)
+    merged_list = merge_db_front(to_check_conversations)
+    for elem in merged_list:
+        if validate_elem(elem):
+            print(postgres_tool.test_ins())
+            postgres_tool.add_row(elem)
+            print(postgres_tool.test_ins())
 
 
 with DAG(
     'data_collector',
     default_args=default_args,
-    description='bla bla bla faccio cose bla bla bla',
+    description='collect parsed data',
     schedule_interval=timedelta(days=1),
     start_date=datetime.datetime(2021, 1, 1),
     catchup=False,
@@ -50,5 +47,5 @@ with DAG(
     t1 = PythonOperator(
         task_id='test_connection',
         execution_timeout=timedelta(seconds=10),
-        python_callable=test_connection
+        python_callable=collect_data
     )

@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import requests
 
-from services.front_utility import FrontUtility
+from dags.services.front_utility import FrontUtility
 
 ACCESS_TOKEN = os.environ['FRONT_TOKEN']
 

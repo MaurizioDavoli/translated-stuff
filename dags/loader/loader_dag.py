@@ -10,8 +10,7 @@ from airflow.operators.python_operator import PythonOperator
 
 from datetime import timedelta, datetime
 
-from os import walk, system
-import os
+from os import walk
 import logging
 
 
