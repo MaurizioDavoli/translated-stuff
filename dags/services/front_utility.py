@@ -15,8 +15,8 @@ url = "https://api2.frontapp.com/conversations/search/"
 headers = {}
 
 # offers_tag = ['automatic',  'forwarded',  'dragged_ui', 'maybe_offer']
-# offers_tag = ['tag_1dxwxy', 'tag_1g44qu', 'tag_1j5rie', 'tag_1j5rra']
-offers_tag = ['tag_1dxwxy', 'tag_1g44qu', 'tag_1j5rie']
+#offers_tag = ['tag_1dxwxy', 'tag_1g44qu', 'tag_1j5rie', 'tag_1j5rra']
+offers_tag = ['tag_1dxwxy']
 
 
 def _get_date_range(start_date, date_range):
@@ -57,6 +57,7 @@ def _query_to_api(query_url):
 
 
 def _parse_tag(tag_list):
+    """query to front tag information and return these parsed"""
     parsed_list = []
     for row in tag_list:
         parsed_list.append(row['name'])
@@ -64,6 +65,7 @@ def _parse_tag(tag_list):
 
 
 def _parse_contact(contact_list):
+    """query contact info to front api and return source and info"""
     parsed_list = []
     for row in contact_list:
         parsed_list.append((row['source'],
@@ -72,9 +74,15 @@ def _parse_contact(contact_list):
 
 
 def _from_timestampms_to_datetime_cet(timestamp_ms):
+    """time zone handling utility"""
     utc_dt = datetime.datetime.fromtimestamp(timestamp_ms).replace(microsecond=0)
     arrival_date = utc_dt.astimezone(timezone('Europe/Rome')).replace(tzinfo=None)
     return arrival_date
+
+
+def _get_body(message_link):
+    # TODO: ask to disheng wich messages should I use
+    return _query_to_api(message_link)['text']
 
 
 class FrontUtility:
@@ -112,7 +120,7 @@ class FrontUtility:
     def get_yesterday_conversations(self, tag=None):
         yesterday = datetime.datetime.now() - timedelta(days=1)
         # TODO: CHANGE THIS!!!! IS JUST FOR TESTS SAKE
-        yesterday_ok = datetime.datetime(yesterday.year, yesterday.month, yesterday.day).replace(month=11)
+        yesterday_ok = datetime.datetime(yesterday.year, yesterday.month, yesterday.day).replace(month=10)
         to_check_conversations = {}
         try:
             response = self.get_conversations(yesterday_ok, tag=tag)
@@ -135,12 +143,12 @@ class FrontUtility:
         print("still working.. it may take a bit")
         a = 0
         for row in conversations:
-            parsed_list.append((row['id'],
+            parsed_list.append((_parse_contact(self.get_contact(row['recipient']['_links']['related']['contact'])),
                                 row['subject'],
-                                row['status'],
-                                _parse_tag(row['tags']),
                                 _from_timestampms_to_datetime_cet(row['created_at']),
-                                _parse_contact(self.get_contact(row['recipient']['_links']['related']['contact']))
+                                _get_body(row['_links']['related']['last_message'])[:500],
+                                _parse_tag(row['tags']),
+                                row['id']
                                 ))
         return parsed_list
 

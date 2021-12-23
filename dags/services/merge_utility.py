@@ -1,10 +1,9 @@
-from services.mysql_utility import MySqlDbUtility
-import os
-
+# status that are good for training
 POSITIVE_STATUS = ['accepted', 'sent', 'refused']
 
 
 def _merge_db_front(db_obj, front_obj):
+    """:return a merged list of db_obj and front_obj"""
     amazing_list = []
     for elem_front in front_obj:
         amazing_list.append(elem_front)
@@ -13,32 +12,25 @@ def _merge_db_front(db_obj, front_obj):
     return amazing_list
 
 
-def merge_db_front(to_check_conversations):
-    mysql_tool = MySqlDbUtility(os.environ['MYSQL_DB_USER'],
-                                os.environ['MYSQL_DB_PSWD'],
-                                os.environ['MYSQL_DB_HOST'],
-                                os.environ['MYSQL_DB_NAME'])
+def merge_db_front(to_check_conversations, mysql_tool):
+    """:return if exist a merged list of front data and staging db
+        pairing based on sender and arrival_datetime"""
     merged_list = []
     for front_obj in to_check_conversations:
-        db_obj = mysql_tool.get_parsed_offer(front_obj[4], front_obj[5][0][1])
+        db_obj = mysql_tool.get_parsed_offer(front_obj[2], front_obj[0][0][1])
         if db_obj:
             merged_list.append(_merge_db_front(db_obj, front_obj))
     return merged_list
 
 
 def validate_elem(processed_elem):
+    """logic for validate good data for training"""
     if not processed_elem:
         return False
     tags = processed_elem[3]
     status = processed_elem[14]
-    if 'automatic' in tags:
-        print("auto" + str(tags) + str(status))
-        if status in POSITIVE_STATUS:
+    if 'automatic' in tags and status in POSITIVE_STATUS:
             return True
-    if 'dragged-ui' in tags:
-        print("drag" + str(tags) + str(status))
-        if status in POSITIVE_STATUS:
+    if 'dragged-ui' in tags and status in POSITIVE_STATUS:
             return True
     return False
-
-

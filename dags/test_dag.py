@@ -1,5 +1,7 @@
 from airflow import DAG
 from airflow.operators.python_operator import PythonOperator
+from airflow.hooks.postgres_hook import PostgresHook
+from airflow.hooks.mysql_hook import MySqlHook
 
 from datetime import timedelta
 import datetime
@@ -8,6 +10,8 @@ from pprint import pprint
 import sys
 import os
 
+from services.postgres_utility import PostgresUtility
+from services.mysql_utility import MySqlDbUtility
 
 def get_sys_path():
     pprint(sys.path)
@@ -26,10 +30,37 @@ def get_project_info():
     print(stream.read())
 
 
+def test_connection_postgres():
+    conn = PostgresHook('LOCAL_POSTGRES').get_conn()
+    postgres_tool = PostgresUtility(conn)
+    print("a")
+    #print(pg_hook)
+    print("b")
+    print(conn)
+    print("c")
+    print(postgres_tool.test_ins())
+    print("d")
+    print("e")
+
+
+def test_connection_mysql():
+    conn = MySqlHook('STAGING_DB_CONNECTION').get_conn()
+    mysql_tool = MySqlDbUtility(conn)
+    print("a")
+    #print(pg_hook)
+    print("b")
+    print(conn)
+    print("c")
+    startdate = datetime.datetime(2021, 10, 10)
+    enddate = datetime.datetime(2021, 10, 11)
+    print(mysql_tool.get_offers_between(startdate, enddate))
+    print("d")
+    print("e")
+
 
 default_args = {
     'owner': 'airflow',
-    'depends_on_past': True,
+    'depends_on_past': False,
     'retries': 1,
     'retry_delay': timedelta(seconds=15)
 }
@@ -52,4 +83,14 @@ with DAG(
         task_id='prj_info',
         execution_timeout=timedelta(seconds=10),
         python_callable=get_project_info
+    )
+    t3 = PythonOperator(
+        task_id='connection_test_postgres',
+        execution_timeout=timedelta(seconds=10),
+        python_callable=test_connection_postgres
+    )
+    t4 = PythonOperator(
+        task_id='connection_test_mysql',
+        execution_timeout=timedelta(seconds=10),
+        python_callable=test_connection_mysql
     )

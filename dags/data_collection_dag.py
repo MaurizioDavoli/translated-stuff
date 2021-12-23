@@ -5,11 +5,13 @@ import datetime
 
 from airflow import DAG
 from airflow.operators.python_operator import PythonOperator
+from airflow.hooks.postgres_hook import PostgresHook
+from airflow.hooks.mysql_hook import MySqlHook
 
 from services.front_utility import FrontUtility
 from services.merge_utility import merge_db_front, validate_elem
 from services.postgres_utility import PostgresUtility
-
+from services.mysql_utility import MySqlDbUtility
 
 default_args = {
     'owner': 'airflow',
@@ -21,18 +23,24 @@ default_args = {
 
 def collect_data():
     front_tool = FrontUtility(os.environ['FRONT_TOKEN'])
-    postgres_tool = PostgresUtility(host='postgres',
-                                    port=5432,
-                                    name='airflow',
-                                    user='airflow',
-                                    pswd='airflow')
+
+    conn = PostgresHook('LOCAL_POSTGRES').get_conn()
+    postgres_tool = PostgresUtility(conn)
+
+    conn = MySqlHook('STAGING_TRANSLATED_DB_CONNECTION').get_conn()
+    mysql_tool = MySqlDbUtility(conn)
+
     to_check_conversations = front_tool.get_tagged_yesterday_parsed_conversations()
-    merged_list = merge_db_front(to_check_conversations)
+    merged_list = merge_db_front(to_check_conversations, mysql_tool)
+    print(merged_list)
     for elem in merged_list:
-        if validate_elem(elem):
-            print(postgres_tool.test_ins())
-            postgres_tool.add_row(elem)
-            print(postgres_tool.test_ins())
+        print(elem)
+        #if validate_elem(elem):
+        print("a")
+        print(postgres_tool.test_ins())
+        postgres_tool.add_row(elem)
+        print("b")
+        print(postgres_tool.test_ins())
 
 
 with DAG(
