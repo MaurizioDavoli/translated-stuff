@@ -9,13 +9,13 @@ import requests
 
 from dags.services.front_utility import FrontUtility
 
-ACCESS_TOKEN = os.environ['FRONT_TOKEN']
+access_token = os.environ['FRONT_TOKEN']
 
 url = "https://api2.frontapp.com/"
 
-headers = {
+FRONT_API_REQUEST_HEADER = {
     "Accept": "application/json",
-    "Authorization": "Bearer "+ACCESS_TOKEN
+    "Authorization": "Bearer " + access_token
 }
 
 
@@ -63,7 +63,7 @@ def get_conversations_of(start_date, time_zone, day_range=1,  tag=None):
     quantity = 0
     while data_frame is None:
         try:
-            response = requests.request("GET", query_url, headers=headers)
+            response = requests.request("GET", query_url, headers=FRONT_API_REQUEST_HEADER)
             print(response.json()["_total"])
             quantity = response.json()["_total"]
             data_frame = pd.DataFrame(response.json()["_results"]).drop(["_links",
@@ -103,7 +103,7 @@ def plot_maybe_offer_october():
 
 #plot_maybe_offer_october()
 
-tool = FrontUtility(ACCESS_TOKEN)
+tool = FrontUtility(access_token)
 tool.get_conversations(datetime(2021, 11, 1), tag="tag_1j5rra")
 
 

@@ -3,20 +3,18 @@ import time
 from datetime import datetime, timedelta
 import datetime
 from pytz import timezone
+import logging
 
 import urllib.parse
-
 import requests
 
-ACCESS_TOKEN = None
 
-url = "https://api2.frontapp.com/conversations/search/"
+FRONT_API_SEARCH_PATH = "https://api2.frontapp.com/conversations/search/"
 
-headers = {}
 
 # offers_tag = ['automatic',  'forwarded',  'dragged_ui', 'maybe_offer']
-#offers_tag = ['tag_1dxwxy', 'tag_1g44qu', 'tag_1j5rie', 'tag_1j5rra']
-offers_tag = ['tag_1dxwxy']
+# OFFERS_TAG = ['tag_1dxwxy', 'tag_1g44qu', 'tag_1j5rie', 'tag_1j5rra']
+OFFERS_TAG = ['tag_1dxwxy']
 
 
 def _get_date_range(start_date, date_range):
@@ -28,32 +26,15 @@ def _get_date_range(start_date, date_range):
 
 def _create_url(start, end, tag, inbox):
     """:return encoded url for get request"""
-    start_query = " after:" + str(start)
-    end_query = " before:" + str(end)
-    tag_query = ""
+    query_dict = {'after': ' after:'+str(start),
+                  'before': ' before:'+str(end)
+                  }
     if tag is not None:
-        tag_query = " tag:" + tag
-    inbox_query = ""
+        query_dict['tag'] = ' tag:'+tag
     if inbox is not None:
-        inbox_query = " inbox:" + inbox
-    query = start_query + end_query + tag_query + inbox_query
-    return url + urllib.parse.quote(query)
-
-
-def _query_to_api(query_url):
-    """:return json result to get query at a given url"""
-    query_response = None
-    while query_response is None:
-        try:
-            query_response = requests.request("GET", query_url, headers=headers).json()
-            if '_error' in query_response:
-                print(query_response)
-                time.sleep(1)
-                query_response = None
-        except Exception as error:
-            query_response = None
-            print(error)
-    return query_response
+        query_dict['inbox'] = ' inbox:'+inbox
+    query_to_encode = ''.join(query_dict.values())
+    return FRONT_API_SEARCH_PATH + urllib.parse.quote(query_to_encode)
 
 
 def _parse_tag(tag_list):
@@ -80,31 +61,41 @@ def _from_timestampms_to_datetime_cet(timestamp_ms):
     return arrival_date
 
 
-def _get_body(message_link):
-    # TODO: ask to disheng wich messages should I use
-    return _query_to_api(message_link)['text']
-
-
 class FrontUtility:
 
+    access_token = None
+    front_api_request_headers = {}
+
     def __init__(self, token):
-        global ACCESS_TOKEN
-        ACCESS_TOKEN = token
-        global headers
-        headers = {
+        self.access_token = token
+        self.front_api_request_headers = {
             "Accept": "application/json",
-            "Authorization": "Bearer " + ACCESS_TOKEN
+            "Authorization": "Bearer " + self.access_token
         }
 
-    @staticmethod
-    def get_conversations(start_date, day_range=1, tag=None, inbox=None):
+    def query_to_api(self, query_url):
+        """:return json result to get query at a given url"""
+        query_response = None
+        while query_response is None:
+            try:
+                query_response = requests.request("GET", query_url, headers=self.front_api_request_headers).json()
+                if '_error' in query_response:
+                    logging.error(query_response)
+                    time.sleep(1)
+                    query_response = None
+            except Exception as error:
+                query_response = None
+                logging.error(error)
+        return query_response
+
+    def get_conversations(self, start_date, day_range=1, tag=None, inbox=None):
+        """:return a list of conversation with a date as input"""
         dates = _get_date_range(start_date, day_range)
         query_url = _create_url(dates[0], dates[1], tag, inbox)
         searched_data = {}
         first_page = True
         while query_url is not None:
-            query_response = _query_to_api(query_url)
-            print(query_url)
+            query_response = self.query_to_api(query_url)
             if first_page:
                 searched_data = query_response
                 first_page = False
@@ -117,45 +108,49 @@ class FrontUtility:
 
         return searched_data
 
-    def get_yesterday_conversations(self, tag=None):
-        yesterday = datetime.datetime.now() - timedelta(days=1)
-        # TODO: CHANGE THIS!!!! IS JUST FOR TESTS SAKE
-        yesterday_ok = datetime.datetime(yesterday.year, yesterday.month, yesterday.day).replace(month=10)
+    def get_last_week_conversations(self, tag=None):
+        """:return the conversation from last_week"""
+        last_week = datetime.datetime.now() - timedelta(days=7)
+        last_week_ok = datetime.datetime(last_week.year, last_week.month, last_week.day)
         to_check_conversations = {}
         try:
-            response = self.get_conversations(yesterday_ok, tag=tag)
+            response = self.get_conversations(last_week_ok, tag=tag)
             to_check_conversations = response['_results']
-            print(response['_total'])
+            logging.info(response['_total'])
         except RecursionError:
-            print("API ERROR")
+            logging.error("recursion error")
         return to_check_conversations
 
-    @staticmethod
-    def get_contact(contact_url):
-        response = _query_to_api(contact_url)['handles']
+    def get_contact(self, contact_url):
+        """:return a contact descriprion"""
+        response = self.query_to_api(contact_url)['handles']
         if response is None:
             return []
         return response
 
-    def get_parsed_yesterday_conversation(self, tag=None):
-        conversations = self.get_yesterday_conversations(tag=tag)
+    def get_body(self, message_link):
+        return self.query_to_api(message_link)['body']
+
+    def get_parsed_last_week_conversation(self, tag=None):
+        """:return all the conversation in a friendly format"""
+        conversations = self.get_last_week_conversations(tag=tag)
         parsed_list = []
-        print("still working.. it may take a bit")
-        a = 0
+        logging.info("still working.. it may take a bit")
         for row in conversations:
             parsed_list.append((_parse_contact(self.get_contact(row['recipient']['_links']['related']['contact'])),
-                                row['subject'],
+                                row['subject'][:450],
                                 _from_timestampms_to_datetime_cet(row['created_at']),
-                                _get_body(row['_links']['related']['last_message'])[:500],
+                                self.get_body(row['_links']['related']['last_message'])[:3500],
                                 _parse_tag(row['tags']),
                                 row['id']
                                 ))
         return parsed_list
 
-    def get_tagged_yesterday_parsed_conversations(self):
+    def get_tagged_last_week_parsed_conversations(self):
+        """:return a list of conversation in a friendly format that are tagged with the content of OFFERS_TAG"""
         parsed_list = []
-        for tag in offers_tag:
-            conversations = self.get_parsed_yesterday_conversation(tag=tag)
+        for tag in OFFERS_TAG:
+            conversations = self.get_parsed_last_week_conversation(tag=tag)
             for conv in conversations:
                 parsed_list.append(conv)
         return parsed_list

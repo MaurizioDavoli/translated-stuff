@@ -1,8 +1,8 @@
 CREATE TABLE IF NOT EXISTS raw_training_data (
     sender VARCHAR(100),
-    subject VARCHAR(100),
+    subject VARCHAR(500),
     arrival_datetime DATE,
-    body VARCHAR(1000),
+    body VARCHAR(4000),
     tag_list VARCHAR(200),
     id_front VARCHAR(15),
     id_offer INT,

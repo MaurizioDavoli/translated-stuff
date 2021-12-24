@@ -24,30 +24,26 @@ default_args = {
 def collect_data():
     front_tool = FrontUtility(os.environ['FRONT_TOKEN'])
 
-    conn = PostgresHook('LOCAL_POSTGRES').get_conn()
+    conn = PostgresHook('STAGING_AM_OFFER_CLASSIFIER_DATASET_RAW_DB_CONNECTION').get_conn()
     postgres_tool = PostgresUtility(conn)
 
     conn = MySqlHook('STAGING_TRANSLATED_DB_CONNECTION').get_conn()
     mysql_tool = MySqlDbUtility(conn)
 
-    to_check_conversations = front_tool.get_tagged_yesterday_parsed_conversations()
+    to_check_conversations = front_tool.get_tagged_last_week_parsed_conversations()
+    for x in to_check_conversations:
+        print(x)
     merged_list = merge_db_front(to_check_conversations, mysql_tool)
-    print(merged_list)
     for elem in merged_list:
-        print(elem)
-        #if validate_elem(elem):
-        print("a")
-        print(postgres_tool.test_ins())
-        postgres_tool.add_row(elem)
-        print("b")
-        print(postgres_tool.test_ins())
+        if validate_elem(elem):
+            postgres_tool.add_row(elem)
 
 
 with DAG(
     'data_collector',
     default_args=default_args,
     description='collect parsed data',
-    schedule_interval=timedelta(days=1),
+    schedule_interval='0 2 * * *',
     start_date=datetime.datetime(2021, 1, 1),
     catchup=False,
     tags=['Translated']

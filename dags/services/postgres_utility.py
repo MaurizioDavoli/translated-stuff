@@ -1,3 +1,4 @@
+"""tool to get simple the operation with a postgress db"""
 CONNECTION = None
 
 
@@ -13,9 +14,8 @@ class PostgresUtility:
         """add a row to raw_training_data table"""
         conn = CONNECTION
         cur = conn.cursor()
-        var_string = ", ".join("%s" * len(element))
+        var_string = ("%s," * len(element))[:-1]
         query_string = "INSERT INTO raw_training_data VALUES (%s);" % var_string
-        print(query_string)
         cur.execute(query_string, element)
         conn.commit()
         cur.close()
