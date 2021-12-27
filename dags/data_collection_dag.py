@@ -30,7 +30,7 @@ def collect_data():
     conn = MySqlHook('STAGING_TRANSLATED_DB_CONNECTION').get_conn()
     mysql_tool = MySqlDbUtility(conn)
 
-    to_check_conversations = front_tool.get_tagged_last_week_parsed_conversations()
+    to_check_conversations = front_tool.get_tagged_parsed_last_week_conversations()
     for x in to_check_conversations:
         print(x)
     merged_list = merge_db_front(to_check_conversations, mysql_tool)

@@ -1,54 +1,18 @@
 """tool to get simple operation with the staging db"""
-import logging
-from mysql.connector.errors import InterfaceError
 
-CONNECTION = None
-
-
-def _execute_query(query, params=None):
-    """:return the full response of a query sent to the db"""
-    response = ["empty", ]
-    try:
-        cnx = CONNECTION
-        cursor = cnx.cursor()
-        cursor.execute(query, params)
-        response = cursor.fetchall()
-        cursor.close()
-    except InterfaceError as error:
-        logging.error(error)
-    return response
+from services.mysql_db_worker import MySqlDbWorker
 
 
 class MySqlDbUtility:
 
+    db_worker = None
+
     def __init__(self, connection):
-        global CONNECTION
-        CONNECTION = connection
-        pass
-
-    @staticmethod
-    def get_offers_between(start_date, end_date):
-        """:return the offers in a given range
-           not in use at the moment, for test scope"""
-        query = "SELECT * FROM customers_offers_stats WHERE arrival_datetime BETWEEN %s AND %s"
-        params = (start_date, end_date,)
-        return _execute_query(query, params=params)
-
-    @staticmethod
-    def get_offer(creation_date, sender_mail):
-        """:return a offer in the db if present"""
-        date_or = creation_date
-        date_no_sec = creation_date.replace(second=0)
-        query = "SELECT * " \
-                "FROM customers_offers_stats " \
-                "WHERE requester_email = %s " \
-                "AND  (arrival_datetime = %s OR arrival_datetime = %s)"
-        params = (sender_mail, date_or, date_no_sec,)
-        return _execute_query(query, params=params)
+        self.db_worker = MySqlDbWorker(connection)
 
     def get_parsed_offer(self, creation_date, sender_mail):
         """:return offer info in a friendly format"""
-        offer = self.get_offer(creation_date, sender_mail)
+        offer = self.db_worker.get_offer(creation_date, sender_mail)
         parsed_offer = []
         if offer:
             offer = offer[0]

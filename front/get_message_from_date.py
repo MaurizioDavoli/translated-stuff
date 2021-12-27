@@ -104,7 +104,7 @@ def plot_maybe_offer_october():
 #plot_maybe_offer_october()
 
 tool = FrontUtility(access_token)
-tool.get_conversations(datetime(2021, 11, 1), tag="tag_1j5rra")
+tool.get_one_day_conversations(datetime(2021, 11, 1), tag="tag_1j5rra")
 
 
 # tag_1j5rra = maybe offer
