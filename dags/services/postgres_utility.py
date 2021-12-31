@@ -19,13 +19,5 @@ class PostgresUtility:
         conn.commit()
         cur.close()
 
-    def test_ins(self):
-        """query all from a table"""
-        conn = self.connection
-        cur = conn.cursor()
-        cur.execute("""
-            SELECT * FROM raw_training_data
-            """)
-        result = cur.fetchall()
-        cur.close()
-        return str(result)
+    def get_last_n_rows(self, n_rows, source_table):
+        pass

@@ -3,7 +3,7 @@ import logging
 from mysql.connector.errors import InterfaceError
 
 
-class MySqlDbWorker:
+class MySqlDbDao:
 
     connection = None
 
@@ -12,7 +12,7 @@ class MySqlDbWorker:
 
     def execute_query(self, query, params=None):
         """:return the full response of a query sent to the db"""
-        response = ["empty", ]
+        response = None
         try:
             cnx = self.connection
             cursor = cnx.cursor()
