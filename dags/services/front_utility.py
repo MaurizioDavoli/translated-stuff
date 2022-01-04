@@ -9,7 +9,7 @@ from services.front_api_utility import FrontApiUtility
 
 # offers_tag = ['automatic',  'forwarded',  'dragged_ui', 'maybe_offer']
 # OFFERS_TAG = ['tag_1dxwxy', 'tag_1g44qu', 'tag_1j5rie', 'tag_1j5rra']
-OFFERS_TAG = ['tag_1dxwxy', 'tag_1g44qu', 'tag_1j5rie']
+OFFERS_TAG = ['tag_1g44qu', 'tag_1j5rie']
 
 
 def _from_timestampms_to_datetime_cet(timestamp_ms):

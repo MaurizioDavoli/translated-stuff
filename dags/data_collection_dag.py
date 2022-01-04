@@ -12,6 +12,7 @@ from services.front_utility import FrontUtility
 from services.merge_utility import merge_db_front, validate_elem
 from services.postgres_utility import PostgresUtility
 from services.mysql_utility import MySqlDbUtility
+from prepro import preprocessing_utility
 
 default_args = {
     'owner': 'airflow',
@@ -37,24 +38,24 @@ def collect_data():
     # TODO: reduce coupling between mysqltool and this dag, by passig to merge_db_front just the connection
     merged_list = merge_db_front(to_check_conversations, mysql_tool)
     inserted_elements = 0
-    print(len(merged_list))
     for elem in merged_list:
-        postgres_tool.add_row(elem)
+        postgres_tool.add_row('raw_training_data', elem)
         inserted_elements = inserted_elements + 1
     return inserted_elements
 
 
 def preproces_data(**kwargs):
 
-    to_copy_lines = kwargs['ti'].xcom_pull(task_ids='collect_raw_data')
+    to_copy_lines = [kwargs['ti'].xcom_pull(task_ids='collect_raw_data'), ]
 
+    conn = PostgresHook('STAGING_AM_OFFER_CLASSIFIER_DATASET_RAW_DB_CONNECTION').get_conn()
+    postgres_tool = PostgresUtility(conn)
 
+    last_added = postgres_tool.get_last_n_email(to_copy_lines)
+    preprocessed_list = preprocessing_utility.preproces_last_loaded(last_added)
 
-    # copy data from db to .csf in folder
-    # run preprocessing scritp
-    # copy output folder content in another table
-
-    pass
+    for elem in preprocessed_list:
+        postgres_tool.add_row('preprocessed_training_data', elem)
 
 
 with DAG(

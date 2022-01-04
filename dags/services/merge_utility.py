@@ -20,12 +20,14 @@ def merge_db_front(to_check_conversations, mysql_tool):
         db_obj = mysql_tool.get_parsed_offer(front_obj[5], front_obj[2])
         if db_obj:
             to_append = _merge_db_front(db_obj, front_obj)
-            if validate_elem(to_append) and to_append.pop(0) not in merged_list:
-                print(to_append)
-                merged_list.append(to_append)
-        elif validate_elem(front_obj):  # and front_obj.pop(0) not in merged_list:
-            print(front_obj.pop(0) not in merged_list)
-            merged_list.append(front_obj)
+            if validate_elem(to_append):
+                to_append.pop(0)
+                if to_append not in merged_list:
+                    merged_list.append(to_append)
+        else:
+            front_obj.pop(0)
+            if validate_elem(front_obj) and front_obj not in merged_list:
+                merged_list.append(front_obj)
     return merged_list
 
 
@@ -35,8 +37,8 @@ def validate_elem(processed_elem):
         return False
     if len(processed_elem) < 10:
         return True
-    tags = processed_elem[0]
+    tag = processed_elem[0]
     status = processed_elem[27]
-    if ('tag_1dxwxy' in tags or 'tag_1g44qu' in tags) and status in POSITIVE_STATUS:      # automatic
+    if ('tag_1dxwxy' == tag or 'tag_1g44qu' == tag) and status in POSITIVE_STATUS:      # automatic
         return True
     return False

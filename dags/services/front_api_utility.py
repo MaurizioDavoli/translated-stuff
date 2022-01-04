@@ -14,7 +14,7 @@ FRONT_API_SEARCH_PATH = "https://api2.frontapp.com/conversations/search/"
 def _get_date_range(start_date, date_range):
     """:return a touple of start and end date"""
     init_date = datetime.datetime.timestamp(start_date)
-    end_date = datetime.datetime.timestamp(start_date + timedelta(hours=date_range))
+    end_date = datetime.datetime.timestamp(start_date + timedelta(days=date_range))
     return init_date, end_date
 
 
