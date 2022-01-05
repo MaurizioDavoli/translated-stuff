@@ -39,3 +39,7 @@ class PostgresUtility:
     def get_errors(self):
         query = "SELECT * FROM errors_table"
         return self.execute_query(query)
+
+    def remove_errors(self, data):
+        query = "DELETE FROM errors_table WHERE failure_datetime=%s"
+        return self.execute_query(query, data, 'POST')

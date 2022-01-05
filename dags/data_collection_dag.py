@@ -5,7 +5,6 @@ import datetime
 from pytz import timezone
 import logging
 
-
 from airflow import DAG
 from airflow.operators.python_operator import PythonOperator
 from airflow.hooks.postgres_hook import PostgresHook
@@ -25,7 +24,7 @@ default_args = {
 }
 
 
-def collect_data():
+def collect_data(start_date=None):
     """collect_data takes mail of one day of the last week from front and merge each one with
         the respective offer in the translated staging db. after this merge these datas are parsed
         and writen on a second db, ready to be preprocessed"""
@@ -37,15 +36,21 @@ def collect_data():
     conn = MySqlHook('STAGING_TRANSLATED_DB_CONNECTION').get_conn()
     mysql_tool = MySqlDbUtility(conn)
 
-    to_check_conversations = front_tool.get_tagged_parsed_last_week_conversations()
+    # in regular situation the start date is now
+    if not start_date:
+        to_check_conversations = front_tool.get_tagged_parsed_last_week_conversations(datetime.datetime.now())
+    else:
+        to_check_conversations = front_tool.get_tagged_parsed_last_week_conversations(start_date)
 
-    # TODO: reduce coupling between mysqltool and this dag, by passig to merge_db_front just the connection
     merged_list = merge_db_front(to_check_conversations, mysql_tool)
     inserted_elements = 0
     for elem in merged_list:
         postgres_tool.add_row('raw_training_data', elem)
         inserted_elements = inserted_elements + 1
-    return inserted_elements
+
+    if not start_date:
+        return inserted_elements
+    preproces_data(inserted_elements)
 
 
 def error_task_t1(context):
@@ -60,9 +65,12 @@ def error_task_t1(context):
     logging.error('something went wrong but take it easy')
 
 
-def preproces_data(**kwargs):
+def preproces_data(inserted_elements=None, **kwargs):
 
-    to_copy_lines = [kwargs['ti'].xcom_pull(task_ids='collect_raw_data'), ]
+    if not inserted_elements:
+        to_copy_lines = [kwargs['ti'].xcom_pull(task_ids='collect_raw_data'), ]
+    else:
+        to_copy_lines = [inserted_elements, ]
 
     conn = PostgresHook('STAGING_AM_OFFER_CLASSIFIER_DATASET_RAW_DB_CONNECTION').get_conn()
     postgres_tool = PostgresUtility(conn)
@@ -75,19 +83,14 @@ def preproces_data(**kwargs):
 
 
 def resolve_errors():
-    front_tool = FrontUtility(os.environ['FRONT_TOKEN'])
 
     conn = PostgresHook('STAGING_AM_OFFER_CLASSIFIER_DATASET_RAW_DB_CONNECTION').get_conn()
     postgres_tool = PostgresUtility(conn)
 
-    conn = MySqlHook('STAGING_TRANSLATED_DB_CONNECTION').get_conn()
-    mysql_tool = MySqlDbUtility(conn)
-
     for date in postgres_tool.get_errors():
-        to_check_conversations = front_tool.get_parsed_tagged_one_hour_range_conversation(date[0])
-        for row in to_check_conversations:
-            print(row)
 
+        collect_data(date[0])
+        postgres_tool.remove_errors(date)
 
 
 with DAG(

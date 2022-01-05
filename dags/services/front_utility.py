@@ -25,21 +25,6 @@ def _get_contact_mail(row, target):
             return elem['handle']
 
 
-def _parse_conversations(conversations):
-    parsed_list = []
-    if conversations:
-        for row in conversations:
-            parsed_list.append((row['id'],
-                                _get_contact_mail(row, 'from'),
-                                _get_contact_mail(row, 'from'),
-                                row['subject'][:450],
-                                _from_timestampms_to_datetime_cet(row['created_at']),
-                                _get_contact_mail(row, 'to'),
-                                row['last_message']['body'][:3500]
-                                ))
-    return parsed_list
-
-
 class FrontUtility:
 
     api_utility = None
@@ -47,19 +32,29 @@ class FrontUtility:
     def __init__(self, token):
         self.api_utility = FrontApiUtility(token)
 
-    def get_parsed_last_week_conversations(self, tag=None, inbox=None):
+    def get_parsed_last_week_conversations(self, start_date, tag=None, inbox=None):
         """:return all the conversation in a friendly format"""
 
         logging.info("still working.. it may take a bit")
-        conversations = self.api_utility.get_last_week_conversations(tag=tag, inbox=inbox)
-        parsed_list = _parse_conversations(conversations)
+        conversations = self.api_utility.get_last_week_conversations(start_date, tag=tag, inbox=inbox)
+        parsed_list = []
+        if conversations:
+            for row in conversations:
+                parsed_list.append((row['id'],
+                                    _get_contact_mail(row, 'from'),
+                                    _get_contact_mail(row, 'from'),
+                                    row['subject'][:450],
+                                    _from_timestampms_to_datetime_cet(row['created_at']),
+                                    _get_contact_mail(row, 'to'),
+                                    row['last_message']['body'][:3500]
+                                    ))
         return parsed_list
 
-    def get_tagged_parsed_last_week_conversations(self):
+    def get_tagged_parsed_last_week_conversations(self, start_date):
         """:return a list of conversation in a friendly format that are tagged with the content of OFFERS_TAG"""
         parsed_list = []
         for tag in OFFERS_TAG:
-            conversations = self.get_parsed_last_week_conversations(tag=tag)
+            conversations = self.get_parsed_last_week_conversations(start_date, tag=tag)
             for conv in conversations:
                 tag_list = [tag]
                 nice_list = [*tag_list, *conv]
