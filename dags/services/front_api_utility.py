@@ -88,3 +88,6 @@ class FrontApiUtility:
             last_week_conversations = response['_results']
             logging.info(response['_total'])
         return last_week_conversations
+
+
+

@@ -35,3 +35,7 @@ class PostgresUtility:
     def get_last_n_email(self, numeber_of_email):
         query = "SELECT * FROM raw_training_data ORDER BY id DESC LIMIT %s"
         return self.execute_query(query, numeber_of_email)
+
+    def get_errors(self):
+        query = "SELECT * FROM errors_table"
+        return self.execute_query(query)

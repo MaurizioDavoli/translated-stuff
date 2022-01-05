@@ -20,25 +20,23 @@ COLUMNS_NAMES = ['front_id', 'sender', 'from_sender', 'subject', 'date', 'receiv
 
 
 def preproces_last_loaded(last_loaded):
+
+    # create dataframe from list of touple
     df = pd.DataFrame(last_loaded, columns=COLUMNS_NAMES).reset_index()
 
+    # preprocessing operations
     email_info_data = df.filter(items=['message-id', 'subject', 'date', 'receiver', 'body'])\
         .pipe(improve_data_emails)\
         .pipe(clean_email_dataset)\
         .pipe(get_years)
-
     email_offer_data = df.filter(items=['message-id', 'id_project', 'id_customer', 'lang', 'status', 'body'])\
         .pipe(create_quote_labels)
-
     email_offer_data = make_email_and_offer_data(email_info_data, email_offer_data)
-
     email_offer_data = email_offer_data.pipe(make_quote_classification_data).\
         pipe(decode_text_from_classification_data).\
         pipe(cut_too_small_text, 3)
 
-    pd.set_option("display.max_rows", None, "display.max_columns", None)
-    print(email_offer_data)
-
+    # cast to list for writing on db
     prepocessed_list = email_offer_data.to_numpy().tolist()
 
     return prepocessed_list

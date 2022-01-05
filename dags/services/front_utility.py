@@ -25,6 +25,21 @@ def _get_contact_mail(row, target):
             return elem['handle']
 
 
+def _parse_conversations(conversations):
+    parsed_list = []
+    if conversations:
+        for row in conversations:
+            parsed_list.append((row['id'],
+                                _get_contact_mail(row, 'from'),
+                                _get_contact_mail(row, 'from'),
+                                row['subject'][:450],
+                                _from_timestampms_to_datetime_cet(row['created_at']),
+                                _get_contact_mail(row, 'to'),
+                                row['last_message']['body'][:3500]
+                                ))
+    return parsed_list
+
+
 class FrontUtility:
 
     api_utility = None
@@ -34,19 +49,10 @@ class FrontUtility:
 
     def get_parsed_last_week_conversations(self, tag=None, inbox=None):
         """:return all the conversation in a friendly format"""
-        parsed_list = []
+
         logging.info("still working.. it may take a bit")
         conversations = self.api_utility.get_last_week_conversations(tag=tag, inbox=inbox)
-        if conversations:
-            for row in conversations:
-                parsed_list.append((row['id'],
-                                    _get_contact_mail(row, 'from'),
-                                    _get_contact_mail(row, 'from'),
-                                    row['subject'][:450],
-                                    _from_timestampms_to_datetime_cet(row['created_at']),
-                                    _get_contact_mail(row, 'to'),
-                                    row['last_message']['body'][:3500]
-                                    ))
+        parsed_list = _parse_conversations(conversations)
         return parsed_list
 
     def get_tagged_parsed_last_week_conversations(self):
@@ -59,3 +65,19 @@ class FrontUtility:
                 nice_list = [*tag_list, *conv]
                 parsed_list.append(nice_list)
         return parsed_list
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
