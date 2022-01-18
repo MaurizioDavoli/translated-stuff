@@ -1,5 +1,9 @@
-psycopg2-binary==2.9.2
-Faker==9.8.3
-boto3==1.20.14
-botocore~=1.23.17
-requests~=2.26.0
+#git+https://${GIT_TOKEN}:x-oauth-basic@github.com/translated/am-offer-ai-models-ci.git
+#git+https://${GIT_TOKEN}:x-oauth-basic@github.com/translated/am-offer-attributes-extraction-model.git
+#git+https://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:x-oauth-basic@github.com/translated/am-offer-attributes-extraction-model.git@main#subdirectory=preprocessing
+
+
+git+https://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:x-oauth-basic@github.com/translated/am-offer-attributes-extraction-model.git@packaging_2
+ftfy
+pandas
+numpy

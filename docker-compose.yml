@@ -17,12 +17,23 @@ x-airflow-common:
     AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
     AIRFLOW__API__AUTH_BACKEND: 'airflow.api.auth.backend.basic_auth'
     _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:-}
-    AWS_ACCESS_KEY_ID: bella key
-    AWS_SECRET_ACCESS_KEY: bellissima key
+    FRONT_TOKEN: "${FRONT_TOKEN}"
+    MYSQL_DB_HOST: "${MYSQL_DB_HOST}"
+    MYSQL_DB_NAME: "${MYSQL_DB_NAME}"
+    MYSQL_DB_USER: "${MYSQL_DB_USER}"
+    MYSQL_DB_PSWD: "${MYSQL_DB_PSWD}"
+    AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID}"
+    AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"
+    GIT_TOKEN: "${GIT_TOKEN}"
+    PYTHONPATH: ./services
   volumes:
     - ./dags:/opt/airflow/dags
     - ./logs:/opt/airflow/logs
     - ./plugins:/opt/airflow/plugins
+    - ./services:/opt/airflow/services
+    - ./preprocessing/data/raw:/opt/airflow/preprocessing/data/raw
+    - ./preprocessing/data/processed:/opt/airflow/preprocessing/data/processed
+    - ./preprocessing/data/output:/opt/airflow/preprocessing/data/output
   user: "${AIRFLOW_UID:-50000}:0"
   depends_on:
     &airflow-common-depends-on
@@ -189,8 +200,8 @@ services:
           echo "   https://airflow.apache.org/docs/apache-airflow/stable/start/docker.html#before-you-begin"
           echo
         fi
-        mkdir -p /sources/logs /sources/dags /sources/plugins
-        chown -R "${AIRFLOW_UID}:0" /sources/{logs,dags,plugins}
+        mkdir -p /sources/logs /sources/dags /sources/plugins /sources/services
+        chown -R "${AIRFLOW_UID}:0" /sources/{logs,dags,plugins,services}
         echo ciao ciao caio \n
         exec /entrypoint airflow version
     # yamllint enable rule:line-length
