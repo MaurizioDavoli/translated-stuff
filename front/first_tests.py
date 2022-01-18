@@ -8,13 +8,13 @@ import matplotlib.pyplot as plt
 import os
 
 
-ACCESS_TOKEN = os.environ['FRONT_TOKEN']
+access_token = os.environ['FRONT_TOKEN']
 
 url = "https://api2.frontapp.com/"
 
-headers = {
+FRONT_API_REQUEST_HEADER = {
     "Accept": "application/json",
-    "Authorization": "Bearer "+ACCESS_TOKEN
+    "Authorization": "Bearer " + access_token
 }
 
 
@@ -27,7 +27,7 @@ def print_uncropped_data_frama(data_frame):
 def get_x_number_of_conversation(x):
     """return .json file with a list of conversation"""
     url_conv = url+'conversations?limit='+str(x)
-    response = requests.request("GET", url_conv, headers=headers)
+    response = requests.request("GET", url_conv, headers=FRONT_API_REQUEST_HEADER)
     # pretty_json = json.loads(response.text)
     # print(json.dumps(pretty_json, indent=2))
     data_frame = pd.DataFrame(response.json()['_results'])
@@ -46,7 +46,7 @@ def get_x_number_of_conversation(x):
 
 def get_conversation_data(id_conv):
     url_conv = url+"conversations/"+str(id_conv)
-    response = requests.request("GET", url_conv, headers=headers)
+    response = requests.request("GET", url_conv, headers=FRONT_API_REQUEST_HEADER)
     data_frame = pd.DataFrame(response.json()["tags"]).drop(["_links",
                                                              "highlight",
                                                              "is_visible_in_conversation_lists",

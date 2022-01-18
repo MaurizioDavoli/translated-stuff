@@ -1,5 +1,5 @@
 """class that offer the capability of looking for conversation in a given date"""
-
+import os
 import urllib.parse
 from datetime import datetime, timedelta
 
@@ -7,14 +7,15 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import requests
 
-from FrontUtility import FrontUtility
+from dags.services.front_utility import FrontUtility
 
+access_token = os.environ['FRONT_TOKEN']
 
 url = "https://api2.frontapp.com/"
 
-headers = {
+FRONT_API_REQUEST_HEADER = {
     "Accept": "application/json",
-    "Authorization": "Bearer "+ACCESS_TOKEN
+    "Authorization": "Bearer " + access_token
 }
 
 
@@ -62,7 +63,7 @@ def get_conversations_of(start_date, time_zone, day_range=1,  tag=None):
     quantity = 0
     while data_frame is None:
         try:
-            response = requests.request("GET", query_url, headers=headers)
+            response = requests.request("GET", query_url, headers=FRONT_API_REQUEST_HEADER)
             print(response.json()["_total"])
             quantity = response.json()["_total"]
             data_frame = pd.DataFrame(response.json()["_results"]).drop(["_links",
@@ -102,8 +103,8 @@ def plot_maybe_offer_october():
 
 #plot_maybe_offer_october()
 
-tool = FrontUtility(ACCESS_TOKEN)
-tool.get_conversations(datetime(2021, 11, 1), tag="tag_1j5rra")
+tool = FrontUtility(access_token)
+tool.get_one_day_conversations(datetime(2021, 11, 1), tag="tag_1j5rra")
 
 
 # tag_1j5rra = maybe offer
