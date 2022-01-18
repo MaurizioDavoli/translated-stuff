@@ -4,6 +4,7 @@ from datetime import timedelta
 import datetime
 from pytz import timezone
 import logging
+import csv
 
 from airflow import DAG
 from airflow.operators.python_operator import PythonOperator
@@ -78,8 +79,13 @@ def preproces_data(inserted_elements=None, **kwargs):
     last_added = postgres_tool.get_last_n_email(to_copy_lines)
     preprocessed_list = preproces_last_loaded(last_added)
 
-    for elem in preprocessed_list:
-        postgres_tool.add_row('preprocessed_training_data', elem)
+
+
+
+    print("okokokok")
+    print(preprocessed_list)
+    """ for elem in preprocessed_list:
+        postgres_tool.add_row('preprocessed_training_data', elem)"""
 
 
 def resolve_errors():

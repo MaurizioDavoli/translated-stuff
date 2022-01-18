@@ -1,4 +1,5 @@
 import pandas as pd
+import csv
 
 from preprocessing.datasets.data_preprocessing import \
     improve_data_emails, \
@@ -38,6 +39,10 @@ def preproces_last_loaded(last_loaded):
 
     # cast to list for writing on db
     prepocessed_list = email_offer_data.to_numpy().tolist()
+
+
+
+
 
     return prepocessed_list
 
