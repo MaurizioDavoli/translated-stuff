@@ -93,7 +93,7 @@ def plot_maybe_offer_october():
         dict_set[str(data).removesuffix("00:00:00")] = maybe_offer
         day = day+1
     serie = pd.Series(dict_set)
-    serie.plot.bar(title='MAYBY OFFER IN NOVEMBRE')
+    serie.plot.bar(title='MAYBE OFFER IN NOVEMBRE')
     plt.tight_layout()
     plt.show()
     plt.close('all')
