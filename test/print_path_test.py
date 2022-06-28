@@ -10,4 +10,6 @@ print('path above')
 
 if path == 'scemo':
     print('scemo')
+else:
+    print('scemo for real')
 
