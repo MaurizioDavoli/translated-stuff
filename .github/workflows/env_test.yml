@@ -1,6 +1,6 @@
 name: Test Env Api
 
-on: [push]
+on: workflow_dispatch
 jobs:
   Test:
     runs-on: ubuntu-latest
