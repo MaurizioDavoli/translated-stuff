@@ -18,5 +18,7 @@ jobs:
         env:
           PATH_TEST: ${{secrets.PATH_TEST}}
         run: |
+          touch secret.txt
           echo $PATH_TEST >> secrets.txt
           cat secret.txt
+          rm secret.txt
