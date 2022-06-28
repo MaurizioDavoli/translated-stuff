@@ -21,4 +21,3 @@ jobs:
           touch secret.txt
           echo $PATH_TEST >> secret.txt
           cat secret.txt
-          rm secret.txt
