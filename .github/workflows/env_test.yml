@@ -1,0 +1,11 @@
+name: Test Env Api
+
+on: [push]
+jobs:
+  Test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: run python script
+        env:
+          PATH_TEST: ${{secrets.PATH_TEST}}
+        run: python3 ./test/print_path_test.py
