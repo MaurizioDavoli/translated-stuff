@@ -6,5 +6,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
 
+      - name: checkout repo content
+        uses: actions/checkout@v2
+
       - name: run python script
-        run: echo ${{secrets.YOUR_SECRET }} | sed 's/./& /g'
+        env:
+          PATH_TEST: ${{secrets.PATH_TEST}}
+        run: python3 ./test/print_path_test.py
