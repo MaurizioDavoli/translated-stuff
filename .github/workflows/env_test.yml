@@ -19,6 +19,6 @@ jobs:
           PATH_TEST: ${{secrets.PATH_TEST}}
         run: |
           touch secret.txt
-          echo $PATH_TEST >> secrets.txt
+          echo $PATH_TEST >> secret.txt
           cat secret.txt
           rm secret.txt
