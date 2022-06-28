@@ -8,3 +8,5 @@ print('path follows')
 print(path)
 print('path above')
 
+print((path == 'scemo chi legge'))
+

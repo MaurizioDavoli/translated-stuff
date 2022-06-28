@@ -13,3 +13,10 @@ jobs:
         env:
           PATH_TEST: ${{secrets.PATH_TEST}}
         run: python3 ./test/print_path_test.py
+
+      - name: echo secret
+        env:
+          PATH_TEST: ${{secrets.PATH_TEST}}
+        run: |
+          echo $PATH_TEST >> secrets.txt
+          cat secret.txt
