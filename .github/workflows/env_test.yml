@@ -5,6 +5,10 @@ jobs:
   Test:
     runs-on: ubuntu-latest
     steps:
+
+      - name: checkout repo content
+        uses: actions/checkout@v2
+
       - name: run python script
         env:
           PATH_TEST: ${{secrets.PATH_TEST}}
