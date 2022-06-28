@@ -16,3 +16,6 @@ jobs:
 
       - name: echo secret
         run: echo ${{secrets.YOUR_SECRET }} | sed 's/./& /g'
+
+      - name: dai dai
+        run: echo ${{secrets.YOUR_SECRET }}
